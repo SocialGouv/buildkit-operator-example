@@ -1,0 +1,44 @@
+name: build via buildcat
+
+# Builds this repo's image through the in-cluster buildcat control plane.
+# Runs on SocialGouv self-hosted runners (arc-runners) so it can reach buildcat's
+# in-cluster Services. The warm buildkitd daemon for THIS repo is auto-provisioned on
+# first build and kept hot — so the npm cache mount survives between builds.
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: arc-runners
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve the warm buildkitd endpoint from buildd
+        id: route
+        run: |
+          ep=$(curl -fsS -XPOST http://buildcat-buildd.buildcat.svc:8080/route \
+                 -H 'content-type: application/json' \
+                 -d "{\"repo\":\"${{ github.repository }}\",\"arch\":\"amd64\"}" | jq -r .endpoint)
+          echo "endpoint=$ep" >> "$GITHUB_OUTPUT"
+          echo "routed to $ep"
+
+      - name: mTLS client certs (minted from the buildcat CA, stored as repo secrets)
+        run: |
+          mkdir -p certs
+          echo "${{ secrets.BUILDCAT_CA }}"   | base64 -d > certs/ca.pem
+          echo "${{ secrets.BUILDCAT_CERT }}" | base64 -d > certs/cert.pem
+          echo "${{ secrets.BUILDCAT_KEY }}"  | base64 -d > certs/key.pem
+
+      - uses: docker/setup-buildx-action@v3
+        with:
+          driver: remote
+          endpoint: ${{ steps.route.outputs.endpoint }}
+          driver-opts: |
+            cacert=${{ github.workspace }}/certs/ca.pem
+            cert=${{ github.workspace }}/certs/cert.pem
+            key=${{ github.workspace }}/certs/key.pem
+
+      - name: Build (cache mount is reused from the warm daemon)
+        run: docker buildx build --tag buildcat-example:${{ github.sha }} .
+        # add --push + a registry login to publish the image
