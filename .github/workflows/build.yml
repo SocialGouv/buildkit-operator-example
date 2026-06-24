@@ -15,6 +15,13 @@ jobs:
       BUILDCAT_BUILDD_URL: ${{ vars.BUILDCAT_BUILDD_URL }} # external buildd endpoint (LB/Ingress)
       BUILDCAT_CERTS_DIR: certs
       REPO: ${{ github.repository }}
+      # Optional S3 cold cache — set these repo vars/secrets to enable (build.sh no-ops if BUCKET unset).
+      # The endpoint is resolved DAEMON-side (in-cluster), so the runner never connects to S3 itself.
+      BUILDCAT_S3_BUCKET: ${{ vars.BUILDCAT_S3_BUCKET }}
+      BUILDCAT_S3_ENDPOINT: ${{ vars.BUILDCAT_S3_ENDPOINT }}
+      BUILDCAT_S3_REGION: ${{ vars.BUILDCAT_S3_REGION }}
+      BUILDCAT_S3_KEY: ${{ secrets.BUILDCAT_S3_KEY }}
+      BUILDCAT_S3_SECRET: ${{ secrets.BUILDCAT_S3_SECRET }}
     steps:
       - uses: actions/checkout@v4
       - name: client mTLS material (repo secrets, base64)

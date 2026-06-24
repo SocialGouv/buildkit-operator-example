@@ -29,4 +29,14 @@ docker buildx create --name buildcat --driver remote \
   --driver-opt "cacert=$certs/ca.pem,cert=$certs/cert.pem,key=$certs/key.pem" \
   "$endpoint" --use
 
-exec docker buildx build --builder buildcat "$@"
+# Optional S3 cold cache: layers are pushed to / pulled from an external bucket, so a COLD daemon
+# (new project, lost PVC, new cluster) rehydrates instead of rebuilding from scratch. The daemon
+# does the S3 I/O — the endpoint is resolved daemon-side (e.g. in-cluster MinIO/OVH Object Storage).
+extra=""
+if [ -n "${BUILDCAT_S3_BUCKET:-}" ]; then
+  s3="type=s3,bucket=$BUILDCAT_S3_BUCKET,region=${BUILDCAT_S3_REGION:-us-east-1},endpoint_url=$BUILDCAT_S3_ENDPOINT,access_key_id=$BUILDCAT_S3_KEY,secret_access_key=$BUILDCAT_S3_SECRET,use_path_style=true,name=$(echo "$REPO" | tr '/' '_')"
+  extra="--cache-from $s3 --cache-to $s3,mode=max"
+  echo "buildcat: S3 cold cache ON (bucket=$BUILDCAT_S3_BUCKET)"
+fi
+
+exec docker buildx build --builder buildcat $extra "$@"
