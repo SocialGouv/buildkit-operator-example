@@ -1,21 +1,24 @@
-name: build via buildcat (GitHub variant)
+name: build via buildcat (GitHub-hosted runner)
 
-# Same build.sh as the GitLab variant — buildcat is CI-agnostic. The runner only has to reach
-# the in-cluster buildcat Services (here: a self-hosted in-cluster runner).
+# Standard GitHub-hosted runner (ubuntu-latest) — nothing GitHub/arc specific. Because a hosted
+# runner is OUTSIDE the cluster, buildcat must be reachable over the internet: buildd's /route and
+# the daemon's :1234 (mTLS) exposed via a LoadBalancer/Ingress, with the public endpoint in the
+# daemon cert SAN — exactly like the existing buildkit-service does (public LB + mTLS).
 on:
   push:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: arc-runners
+    runs-on: ubuntu-latest
     env:
-      BUILDCAT_BUILDD_URL: http://buildcat-buildd.buildcat.svc:8080
+      BUILDCAT_BUILDD_URL: ${{ vars.BUILDCAT_BUILDD_URL }} # external buildd endpoint (LB/Ingress)
       BUILDCAT_CERTS_DIR: certs
       REPO: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
-      - run: |
+      - name: client mTLS material (repo secrets, base64)
+        run: |
           mkdir -p certs
           printf '%s' "${{ secrets.BUILDCAT_CA }}"   | base64 -d > certs/ca.pem
           printf '%s' "${{ secrets.BUILDCAT_CERT }}" | base64 -d > certs/cert.pem
