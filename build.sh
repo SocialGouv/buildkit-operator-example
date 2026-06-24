@@ -22,8 +22,11 @@ endpoint=$(curl -fsS -XPOST "$BUILDCAT_BUILDD_URL/route" \
   -d "{\"repo\":\"$REPO\",\"arch\":\"$ARCH\"}" | jq -r .endpoint)
 echo "buildcat: routed $REPO ($ARCH) -> $endpoint"
 
+# buildx reads the cert files at create time — use absolute paths.
+certs=$(cd "$BUILDCAT_CERTS_DIR" && pwd)
+docker buildx rm buildcat >/dev/null 2>&1 || true
 docker buildx create --name buildcat --driver remote \
-  --driver-opt "cacert=$BUILDCAT_CERTS_DIR/ca.pem,cert=$BUILDCAT_CERTS_DIR/cert.pem,key=$BUILDCAT_CERTS_DIR/key.pem" \
-  "$endpoint" --use >/dev/null 2>&1 || docker buildx use buildcat
+  --driver-opt "cacert=$certs/ca.pem,cert=$certs/cert.pem,key=$certs/key.pem" \
+  "$endpoint" --use
 
-exec docker buildx build "$@"
+exec docker buildx build --builder buildcat "$@"
