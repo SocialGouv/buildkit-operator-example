@@ -28,8 +28,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # @main tracks latest; pin to @v1 (or a release tag) in production.
-      - uses: socialgouv/buildkit-operator@main
+      # Pinned to the v1 release tag (moved forward on each release); @main would track latest.
+      - uses: socialgouv/buildkit-operator@v1
         with:
           buildd-url: ${{ vars.BUILDKIT_OPERATOR_BUILDD_URL }}
           # Only needed until a wildcard DNS *.<gateway-host> points at the gateway LB.
