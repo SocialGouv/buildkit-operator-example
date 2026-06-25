@@ -1,2 +1,2 @@
-{ "name": "buildcat-example", "version": "1.0.0", "private": true,
+{ "name": "buildkit-operator-example", "version": "1.0.0", "private": true,
   "dependencies": { "express": "^4.19.2", "lodash": "^4.17.21" } }

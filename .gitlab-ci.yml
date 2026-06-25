@@ -1,18 +1,13 @@
-# GitLab variant — SAME build.sh, different wrapper. buildcat is CI-agnostic: nothing here is
-# GitHub/GitLab specific except getting the certs into the job. Run the GitLab runner in the same
-# cluster (Kubernetes executor) so it can reach buildcat's in-cluster Services.
+# The same buildkit-operator build on GitLab — no GitHub Action, just the CI-agnostic core script
+# pulled from the operator repo. Set the BUILDKIT_OPERATOR_* CI variables (buildd URL + mTLS PEMs).
 build:
-  stage: build
-  image: docker:27-cli
+  image: docker:27
+  services: [docker:27-dind]
   variables:
-    BUILDCAT_BUILDD_URL: http://buildcat-buildd.buildcat.svc:8080
-    BUILDCAT_CERTS_DIR: certs
     REPO: $CI_PROJECT_PATH
+    TAGS: buildkit-operator-example:$CI_COMMIT_SHA
+    GATEWAY_IP: $BUILDKIT_OPERATOR_GATEWAY_IP
   before_script:
-    - apk add --no-cache curl jq
-    - mkdir -p certs
-    - printf '%s' "$BUILDCAT_CA"   | base64 -d > certs/ca.pem
-    - printf '%s' "$BUILDCAT_CERT" | base64 -d > certs/cert.pem
-    - printf '%s' "$BUILDCAT_KEY"  | base64 -d > certs/key.pem
+    - apk add --no-cache curl jq bash
   script:
-    - sh build.sh -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" .
+    - curl -fsSL https://raw.githubusercontent.com/socialgouv/buildkit-operator/v1/scripts/build.sh | bash

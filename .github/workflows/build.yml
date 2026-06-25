@@ -1,9 +1,8 @@
-name: build via buildcat (GitHub-hosted runner)
+name: build via buildkit-operator
 
-# Standard GitHub-hosted runner (ubuntu-latest) — nothing GitHub/arc specific. Because a hosted
-# runner is OUTSIDE the cluster, buildcat must be reachable over the internet: buildd's /route and
-# the daemon's :1234 (mTLS) exposed via a LoadBalancer/Ingress, with the public endpoint in the
-# daemon cert SAN — exactly like the existing buildkit-service does (public LB + mTLS).
+# Builds this repo's image with buildkit-operator using its ready-to-use Action — no build script
+# in this repo. The Action routes to the project's hot buildkitd and builds via buildx remote (mTLS),
+# applying the project's S3 cold cache automatically.
 on:
   push:
   workflow_dispatch:
@@ -11,24 +10,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      BUILDCAT_BUILDD_URL: ${{ vars.BUILDCAT_BUILDD_URL }} # external buildd endpoint (LB/Ingress)
-      BUILDCAT_CERTS_DIR: certs
-      REPO: ${{ github.repository }}
-      # Optional S3 cold cache — set these repo vars/secrets to enable (build.sh no-ops if BUCKET unset).
-      # The endpoint is resolved DAEMON-side (in-cluster), so the runner never connects to S3 itself.
-      BUILDCAT_S3_BUCKET: ${{ vars.BUILDCAT_S3_BUCKET }}
-      BUILDCAT_S3_ENDPOINT: ${{ vars.BUILDCAT_S3_ENDPOINT }}
-      BUILDCAT_S3_REGION: ${{ vars.BUILDCAT_S3_REGION }}
-      BUILDCAT_S3_KEY: ${{ secrets.BUILDCAT_S3_KEY }}
-      BUILDCAT_S3_SECRET: ${{ secrets.BUILDCAT_S3_SECRET }}
     steps:
       - uses: actions/checkout@v4
-      - name: client mTLS material (repo secrets, base64)
-        run: |
-          mkdir -p certs
-          printf '%s' "${{ secrets.BUILDCAT_CA }}"   | base64 -d > certs/ca.pem
-          printf '%s' "${{ secrets.BUILDCAT_CERT }}" | base64 -d > certs/cert.pem
-          printf '%s' "${{ secrets.BUILDCAT_KEY }}"  | base64 -d > certs/key.pem
-      - uses: docker/setup-buildx-action@v3
-      - run: sh build.sh -t buildcat-example:${{ github.sha }} .
+      - uses: socialgouv/buildkit-operator@v1
+        with:
+          buildd-url: ${{ vars.BUILDKIT_OPERATOR_BUILDD_URL }}
+          # Only needed until a wildcard DNS *.<gateway-host> points at the gateway LB.
+          gateway-ip: ${{ vars.BUILDKIT_OPERATOR_GATEWAY_IP }}
+          ca: ${{ secrets.BUILDKIT_OPERATOR_CA }}
+          cert: ${{ secrets.BUILDKIT_OPERATOR_CERT }}
+          key: ${{ secrets.BUILDKIT_OPERATOR_KEY }}
+          tags: buildkit-operator-example:${{ github.sha }}
