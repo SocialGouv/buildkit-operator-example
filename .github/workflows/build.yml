@@ -50,7 +50,7 @@ jobs:
         run: |
           set -eux
           cosign verify "${IMAGE}:${{ github.sha }}" \
-            --certificate-identity-regexp "^https://github.com/socialgouv/buildkit-operator-example/" \
+            --certificate-identity-regexp "(?i)^https://github.com/socialgouv/buildkit-operator-example/" \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null
           echo "✅ cosign signature verified"
           echo "::group::provenance"; docker buildx imagetools inspect "${IMAGE}:${{ github.sha }}" --format '{{ json .Provenance }}' | head -c 700; echo; echo "::endgroup::"
