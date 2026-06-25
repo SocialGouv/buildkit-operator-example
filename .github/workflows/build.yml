@@ -37,6 +37,8 @@ jobs:
           ca: ${{ secrets.BUILDKIT_OPERATOR_CA }}
           cert: ${{ secrets.BUILDKIT_OPERATOR_CERT }}
           key: ${{ secrets.BUILDKIT_OPERATOR_KEY }}
+          # Bearer token for the internet-exposed /route API.
+          token: ${{ secrets.BUILDKIT_OPERATOR_TOKEN }}
           tags: ${{ env.IMAGE }}:${{ github.sha }}
           push: true
           provenance: mode=max
