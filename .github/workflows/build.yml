@@ -29,7 +29,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Pinned to the v1 release tag (moved forward on each release); @main would track latest.
-      - uses: socialgouv/buildkit-operator@b346209
+      - uses: socialgouv/buildkit-operator@b3462098a1eccde1a37a126e3fcfa7d66460c121
         with:
           buildd-url: ${{ vars.BUILDKIT_OPERATOR_BUILDD_URL }}
           # Only needed until a wildcard DNS *.<gateway-host> points at the gateway LB.
