@@ -29,11 +29,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Pinned to the v1 release tag (moved forward on each release); @main would track latest.
-      - uses: socialgouv/buildkit-operator@b3462098a1eccde1a37a126e3fcfa7d66460c121
+      - uses: socialgouv/buildkit-operator@7bcb4f8b6cfd5288e86e3a2fe950728c9b6d42ef
         with:
           buildd-url: ${{ vars.BUILDKIT_OPERATOR_BUILDD_URL }}
           # Only needed until a wildcard DNS *.<gateway-host> points at the gateway LB.
-          gateway-ip: ${{ vars.BUILDKIT_OPERATOR_GATEWAY_IP }}
+          gateway-host: bkod.fabrique.social.gouv.fr
           ca: ${{ secrets.BUILDKIT_OPERATOR_CA }}
           cert: ${{ secrets.BUILDKIT_OPERATOR_CERT }}
           key: ${{ secrets.BUILDKIT_OPERATOR_KEY }}
