@@ -10,7 +10,7 @@ on:
 permissions:
   contents: read
   packages: write # push the image to GHCR
-  id-token: write # keyless cosign signing via GitHub OIDC
+  id-token: write # mints the OIDC identity buildd authenticates with, and signs keyless with cosign
 
 env:
   IMAGE: ghcr.io/socialgouv/buildkit-operator-example
@@ -29,7 +29,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Pinned to the v1 release tag (moved forward on each release); @main would track latest.
-      - uses: socialgouv/buildkit-operator@7bcb4f8b6cfd5288e86e3a2fe950728c9b6d42ef
+      - uses: socialgouv/buildkit-operator@42071022f7c68070aeba92e8c30e95d8564eeb53 # v0.21.0
         with:
           buildd-url: ${{ vars.BUILDKIT_OPERATOR_BUILDD_URL }}
           # Only needed until a wildcard DNS *.<gateway-host> points at the gateway LB.
@@ -37,8 +37,9 @@ jobs:
           ca: ${{ secrets.BUILDKIT_OPERATOR_CA }}
           cert: ${{ secrets.BUILDKIT_OPERATOR_CERT }}
           key: ${{ secrets.BUILDKIT_OPERATOR_KEY }}
-          # Bearer token for the internet-exposed /route API.
-          token: ${{ secrets.BUILDKIT_OPERATOR_TOKEN }}
+          # No token: the Action mints a GitHub OIDC identity from the job's id-token permission, and
+          # buildd binds the build to the repo THAT token proves. A shared bearer would only prove the
+          # caller, letting it declare any repo — buildd no longer accepts one.
           tags: ${{ env.IMAGE }}:${{ github.sha }}
           push: true
           provenance: mode=max
