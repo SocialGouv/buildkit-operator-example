@@ -32,8 +32,8 @@ jobs:
       - uses: socialgouv/buildkit-operator@42071022f7c68070aeba92e8c30e95d8564eeb53 # v0.21.0
         with:
           buildd-url: ${{ vars.BUILDKIT_OPERATOR_BUILDD_URL }}
-          # Only needed until a wildcard DNS *.<gateway-host> points at the gateway LB.
-          gateway-host: bkod.fabrique.social.gouv.fr
+          # Read from the organisation like the buildd URL, so both always name the same instance.
+          gateway-host: ${{ vars.BUILDKIT_OPERATOR_GATEWAY_HOST }}
           ca: ${{ secrets.BUILDKIT_OPERATOR_CA }}
           cert: ${{ secrets.BUILDKIT_OPERATOR_CERT }}
           key: ${{ secrets.BUILDKIT_OPERATOR_KEY }}
